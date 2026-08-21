@@ -6,13 +6,28 @@ require('dotenv').config();
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
-app.use(cors());
+
+// 🧠 NAYA CORS SETUP: Sirf in 2 websites ko allow karega (Very Secure)
+app.use(cors({
+    origin: ["http://localhost:5173", "https://cool-brioche-e3b02b.netlify.app"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
+
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
 
-// 🧠 NAYA: In-Memory Database (Server chalne tak data yahan save rahega)
+// 🧠 SOCKET.IO CORS SETUP
+const io = new Server(server, { 
+    cors: { 
+        origin: ["http://localhost:5173", "https://cool-brioche-e3b02b.netlify.app"],
+        methods: ["GET", "POST"],
+        credentials: true
+    } 
+});
+
+// In-Memory Database
 let boardData = [
   { id: '1', title: 'Frontend UI Design', status: 'Todo', priority: 'High', time: '17 Aug, 10:00 AM' },
   { id: '2', title: 'Integrate Gemini AI', status: 'Done', priority: 'High', time: '17 Aug, 10:15 AM' }
@@ -26,15 +41,13 @@ catch(err) { console.log("Warning: Gemini API Key set nahi hai!"); }
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Jab user website kholta hai, toh server apni memory se data bhejta hai
   socket.on('join-board', (boardId) => {
     socket.join(boardId);
     socket.emit('update-board', { cards: boardData });
   });
 
-  // Jab user task add/move karta hai
   socket.on('card-moved', (data) => {
-    boardData = data.cards; // Server ki memory update ho jati hai
+    boardData = data.cards; 
     socket.to(data.boardId).emit('update-board', data);
   });
 
