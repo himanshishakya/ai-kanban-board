@@ -60,7 +60,7 @@ app.post('/api/ai/breakdown', async (req, res) => {
     const { taskTitle } = req.body;
     if (!ai) return res.status(400).json({error: "Backend me API key missing hai."});
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: `Break down the following project task into 3 to 5 actionable subtasks. Return as a clean bulleted list: "${taskTitle}"`,
     });
     res.json({ subtasks: response.text });
