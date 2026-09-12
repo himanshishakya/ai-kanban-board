@@ -12,10 +12,16 @@
   "type": "commonjs",
   "dependencies": {
     "@google/genai": "^2.16.0",
+    "@google/generative-ai": "^0.24.1",
+    "@hello-pangea/dnd": "^18.0.1",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mongoose": "^9.9.2",
-    "socket.io": "^4.8.3"
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.43.0",
+    "mongoose": "^9.9.5",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   }
 }
