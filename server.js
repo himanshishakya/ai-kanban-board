@@ -1,17 +1,32 @@
-require('dotenv').config({ path: __dirname + '/.env' });
-const express = require('express');
-const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
-const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken'); // Security Package
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+// 👇 1. YAHAN EXPRESS KA CORS HAI (Netlify link ke sath) 👇
+app.use(cors({
+  origin: ["http://localhost:5173", "https://taupe-cannoli-18f25b.netlify.app"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+
+// 👇 2. YAHAN SOCKET.IO KA CORS HAI (Netlify link ke sath) 👇
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "https://taupe-cannoli-18f25b.netlify.app"],
+    methods: ["GET", "POST"]
+  }
+});
+
+// Iske neeche aapka baaki ka code (Database connection, Routes, wagaira) aise hi rahega...
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
