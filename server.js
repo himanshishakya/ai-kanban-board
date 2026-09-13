@@ -3,13 +3,15 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken"); 
+const path = require("path"); 
 require("dotenv").config();
 
 const app = express();
 
-// 👇 1. YAHAN EXPRESS KA CORS HAI (Netlify link ke sath) 👇
+// 1. EXPRESS KA CORS (Netlify Link Removed)
 app.use(cors({
-  origin: ["http://localhost:5173", "https://taupe-cannoli-18f25b.netlify.app"],
+  origin: ["http://localhost:5173"], 
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
@@ -18,15 +20,13 @@ app.use(express.json());
 
 const server = http.createServer(app);
 
-// 👇 2. YAHAN SOCKET.IO KA CORS HAI (Netlify link ke sath) 👇
+// 2. SOCKET.IO KA CORS (Netlify Link Removed)
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "https://taupe-cannoli-18f25b.netlify.app"],
+    origin: ["http://localhost:5173"], 
     methods: ["GET", "POST"]
   }
 });
-
-// Iske neeche aapka baaki ka code (Database connection, Routes, wagaira) aise hi rahega...
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
@@ -52,7 +52,7 @@ const Task = mongoose.model('Task', taskSchema);
 // 2. BULLETPROOF MONGODB CONNECTION
 // ==========================================
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ai-kanban-db', {
-  serverSelectionTimeoutMS: 2000 // 2 sec me timeout ho kar RAM par switch karega
+  serverSelectionTimeoutMS: 2000 
 })
   .then(async () => {
     console.log('📦 MongoDB Connected! Data is permanent.');
@@ -60,7 +60,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ai-kanban-d
     const savedTasks = await Task.find({});
     if (savedTasks.length > 0) globalCards = savedTasks;
     const savedUsers = await User.find({});
-    if (savedUsers.length > 0) globalMembers = savedUsers; // Members load
+    if (savedUsers.length > 0) globalMembers = savedUsers; 
   })
   .catch(err => {
     console.log('⚠️ MongoDB connection skipped. Running smoothly on High-Speed RAM.');
@@ -71,7 +71,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ai-kanban-d
 // 3. SECURE AUTHENTICATION API
 // ==========================================
 app.post('/api/auth', async (req, res) => {
-  const { name, email, role } = req.body;
+  const { name, email, role, password } = req.body;
   if (!name || !email) return res.status(400).json({ error: "Name and Email are required" });
 
   const colors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4', '#10B981'];
@@ -87,12 +87,6 @@ app.post('/api/auth', async (req, res) => {
 // ==========================================
 // 4. AI AGENT & ASSISTANT APIS (Live Gemini)
 // ==========================================
-// A. Task Breakdown API (For Modal)
-// ==========================================
-// 4. AI AGENT & ASSISTANT APIS (Updated to Gemini 3.6 Flash)
-// ==========================================
-
-// A. Task Breakdown API (For Modal)
 app.post('/api/ai/breakdown', async (req, res) => {
   try {
     const { taskTitle } = req.body;
@@ -101,7 +95,7 @@ app.post('/api/ai/breakdown', async (req, res) => {
       return res.status(400).json({ error: 'Please set a valid GEMINI_API_KEY in your .env file.' });
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -117,7 +111,6 @@ app.post('/api/ai/breakdown', async (req, res) => {
   }
 });
 
-// B. Live Workspace AI Assistant (For Chat Tab)
 app.post('/api/ai/assistant', async (req, res) => {
   try {
     const { message, cards } = req.body;
@@ -136,7 +129,7 @@ User Query: "${message}"
 
 Provide a concise, direct, helpful response tailored specifically to the project data above. Use bullet points and clean formatting.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -183,7 +176,6 @@ io.on('connection', (socket) => {
       exists.status = 'Online 🟢';
     }
 
-    // Live Team Synchronization
     io.emit('update-team-members', globalMembers);
     socket.emit('update-board', { boardId: userData.boardId, cards: globalCards });
 
@@ -210,6 +202,12 @@ io.on('connection', (socket) => {
   socket.on('new-notification', (data) => {
     socket.to(data.boardId).emit('new-notification-broadcast', data.notification);
   });
+});
+
+// 🔥 UPDATE 3: React Frontend ko serve karne ka code (Render ke liye)
+app.use(express.static(path.join(__dirname, 'dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;

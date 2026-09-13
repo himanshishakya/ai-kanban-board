@@ -8,11 +8,8 @@ import {
   Activity, ArrowRight, ShieldCheck, Clock, Layers, Loader2, Link, Plus, BookOpen, CheckCircle2, Send
 } from 'lucide-react';
 
-const BACKEND_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000' 
-  : 'https://apka-render-backend-url.onrender.com'; // Render par backend deploy karne ke baad yahan live URL dalna hai
-
-const socket = io(BACKEND_URL, { autoConnect: false });
+const SOCKET_URL = window.location.origin;
+const socket = io(SOCKET_URL, { autoConnect: false });
 
 export default function App() {
   const [user, setUser] = useState(() => {
@@ -119,12 +116,13 @@ export default function App() {
     setIsLoggingIn(true);
 
     try {
-        const res = await fetch('http://localhost:5000/api/auth', {
+        // ✅ CORRECT API ROUTE: /api/auth
+        const res = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: joinName.trim(), email: joinEmail.trim().toLowerCase(), role: joinRole })
         });
-        
+         
         const data = await res.json();
         if (data.token) {
             sessionStorage.setItem('kanbanToken', data.token);
@@ -150,7 +148,7 @@ export default function App() {
     document.body.removeChild(textArea);
   };
 
-  // 🔥 LIVE AI ASSISTANT QUERY FUNCTION
+  // 🔥 LIVE AI ASSISTANT API
   const triggerAIAssistantQuery = async (queryText) => {
     const promptToRun = queryText || aiCommand;
     if (!promptToRun.trim()) return;
@@ -160,7 +158,7 @@ export default function App() {
     setIsAssistantThinking(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/ai/assistant', {
+      const response = await fetch('/api/ai/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: promptToRun, cards })
@@ -173,19 +171,19 @@ export default function App() {
         setAiChatMessages(prev => [...prev, { sender: 'ai', text: '⚠️ ' + (data.error || 'Could not fetch AI response. Verify your .env GEMINI_API_KEY.') }]);
       }
     } catch (err) {
-      setAiChatMessages(prev => [...prev, { sender: 'ai', text: '🚨 Backend Server Unreachable: Ensure node server.js is running on port 5000.' }]);
+      setAiChatMessages(prev => [...prev, { sender: 'ai', text: '🚨 Backend Server Unreachable: Ensure node server.js is running.' }]);
     } finally {
       setIsAssistantThinking(false);
     }
   };
 
-  // 🔥 LIVE AI SUBTASKS BREAKDOWN (Inside Task Modal)
+  // 🔥 LIVE AI SUBTASKS BREAKDOWN API
   const generateAISubtasks = async (title, e) => {
     if(e) e.stopPropagation();
     setIsAiLoading(true); setAiOutput(''); setAiPreview(null);
-    
+  
     try {
-      const response = await fetch('http://localhost:5000/api/ai/breakdown', {
+      const response = await fetch('/api/ai/breakdown', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskTitle: title })
@@ -198,7 +196,7 @@ export default function App() {
         setAiOutput("⚠️ " + (data.error || "Please check GEMINI_API_KEY in your .env file."));
       }
     } catch (error) {
-      setAiOutput("🚨 Backend Server Connection Error on Port 5000.");
+      setAiOutput("🚨 Backend Server Connection Error.");
     } finally {
       setIsAiLoading(false);
     }
@@ -273,7 +271,7 @@ export default function App() {
     const cardToMove = cards.find(c => c.id === draggableId);
     const remainingCards = cards.filter(c => c.id !== draggableId);
     const updatedCard = { ...cardToMove, status: destination.droppableId };
-    
+  
     const destCards = remainingCards.filter(c => c.status === destination.droppableId);
     destCards.splice(destination.index, 0, updatedCard);
     const otherCards = remainingCards.filter(c => c.status !== destination.droppableId);
@@ -686,7 +684,7 @@ export default function App() {
                     key={actionTitle}
                     onClick={() => triggerAIAssistantQuery(actionTitle)}
                     disabled={isAssistantThinking}
-                    style={{ background: '#fff', border: '1px solid #CBD5E1', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', color: '#334155', cursor: 'pointer', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    style={{ background: '#fff', border: '1.5px solid #CBD5E1', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', color: '#334155', cursor: 'pointer', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
                     className="hover-card"
                   >
                     <Sparkles size={14} color={theme.accent} /> {actionTitle}
@@ -743,26 +741,26 @@ export default function App() {
             <p style={{ color: theme.sidebarText, marginBottom: '40px', fontSize: '16px' }}>Real breakdown of team velocity and task distribution.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
                <div style={{ background: '#fff', padding: '32px', borderRadius: '16px', border: `1px solid ${theme.border}` }}>
-                 <h3 style={{ margin: '0 0 20px', fontSize: '18px' }}>Task Priority Distribution</h3>
-                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', height: '150px', borderBottom: `1px solid ${theme.border}`, paddingBottom: '10px' }}>
-                    <div style={{ flex: 1, background: '#EF4444', height: `${(cards.filter(c => c.priority === 'High').length / (cards.length || 1)) * 100}%`, borderRadius: '4px 4px 0 0' }}></div>
-                    <div style={{ flex: 1, background: '#F59E0B', height: `${(cards.filter(c => c.priority === 'Medium').length / (cards.length || 1)) * 100}%`, borderRadius: '4px 4px 0 0' }}></div>
-                    <div style={{ flex: 1, background: '#3B82F6', height: `${(cards.filter(c => c.priority === 'Low').length / (cards.length || 1)) * 100}%`, borderRadius: '4px 4px 0 0' }}></div>
-                 </div>
-                 <div style={{ display: 'flex', gap: '12px', marginTop: '10px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: theme.sidebarText }}>
-                    <div style={{ flex: 1 }}>High</div><div style={{ flex: 1 }}>Medium</div><div style={{ flex: 1 }}>Low</div>
-                 </div>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '18px' }}>Task Priority Distribution</h3>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', height: '150px', borderBottom: `1px solid ${theme.border}`, paddingBottom: '10px' }}>
+                     <div style={{ flex: 1, background: '#EF4444', height: `${(cards.filter(c => c.priority === 'High').length / (cards.length || 1)) * 100}%`, borderRadius: '4px 4px 0 0' }}></div>
+                     <div style={{ flex: 1, background: '#F59E0B', height: `${(cards.filter(c => c.priority === 'Medium').length / (cards.length || 1)) * 100}%`, borderRadius: '4px 4px 0 0' }}></div>
+                     <div style={{ flex: 1, background: '#3B82F6', height: `${(cards.filter(c => c.priority === 'Low').length / (cards.length || 1)) * 100}%`, borderRadius: '4px 4px 0 0' }}></div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '10px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: theme.sidebarText }}>
+                     <div style={{ flex: 1 }}>High</div><div style={{ flex: 1 }}>Medium</div><div style={{ flex: 1 }}>Low</div>
+                  </div>
                </div>
                <div style={{ background: '#fff', padding: '32px', borderRadius: '16px', border: `1px solid ${theme.border}` }}>
-                 <h3 style={{ margin: '0 0 20px', fontSize: '18px' }}>Weekly Velocity</h3>
-                 <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', height: '150px', borderBottom: `1px solid ${theme.border}`, paddingBottom: '10px' }}>
-                    {[40, 60, 45, 80, 50].map((h, i) => (
-                      <div key={i} style={{ flex: 1, background: theme.accent, height: `${h}%`, borderRadius: '4px 4px 0 0', opacity: i === 4 ? 1 : 0.6 }}></div>
-                    ))}
-                 </div>
-                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: theme.sidebarText }}>
-                    <div style={{ flex: 1 }}>Mon</div><div style={{ flex: 1 }}>Tue</div><div style={{ flex: 1 }}>Wed</div><div style={{ flex: 1 }}>Thu</div><div style={{ flex: 1 }}>Fri</div>
-                 </div>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '18px' }}>Weekly Velocity</h3>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', height: '150px', borderBottom: `1px solid ${theme.border}`, paddingBottom: '10px' }}>
+                     {[40, 60, 45, 80, 50].map((h, i) => (
+                       <div key={i} style={{ flex: 1, background: theme.accent, height: `${h}%`, borderRadius: '4px 4px 0 0', opacity: i === 4 ? 1 : 0.6 }}></div>
+                     ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: theme.sidebarText }}>
+                     <div style={{ flex: 1 }}>Mon</div><div style={{ flex: 1 }}>Tue</div><div style={{ flex: 1 }}>Wed</div><div style={{ flex: 1 }}>Thu</div><div style={{ flex: 1 }}>Fri</div>
+                  </div>
                </div>
             </div>
           </div>
