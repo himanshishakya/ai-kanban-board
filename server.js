@@ -95,7 +95,7 @@ app.post('/api/ai/breakdown', async (req, res) => {
       return res.status(400).json({ error: 'Please set a valid GEMINI_API_KEY in your .env file.' });
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -129,7 +129,7 @@ User Query: "${message}"
 
 Provide a concise, direct, helpful response tailored specifically to the project data above. Use bullet points and clean formatting.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -206,7 +206,7 @@ io.on('connection', (socket) => {
 
 // 🔥 UPDATE 3: React Frontend ko serve karne ka code (Render ke liye)
 app.use(express.static(path.join(__dirname, 'dist')));
-app.get('/*', (req, res) => {
+app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
